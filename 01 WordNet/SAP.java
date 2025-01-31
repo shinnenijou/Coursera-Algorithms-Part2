@@ -24,10 +24,10 @@ public class SAP {
         }
     }
 
-    private Digraph copy(Digraph digraph) {
+    private static Digraph copy(Digraph digraph) {
         Digraph newDigraph = new Digraph(digraph.V());
-        for (int v = 0; v < digraph.V(); v++){
-            for (int w : digraph.adj(v)){
+        for (int v = 0; v < digraph.V(); v++) {
+            for (int w : digraph.adj(v)) {
                 newDigraph.addEdge(v, w);
             }
         }
@@ -59,15 +59,16 @@ public class SAP {
 
         for (int v : initSet) {
             queue.enqueue(v);
+            marked[v] = VISITED;
             distTo[v] = 0;
         }
 
         while (!queue.isEmpty()) {
             int v = queue.dequeue();
-            marked[v] = VISITED;
 
             for (int w : G.adj(v)) {
                 if (marked[w] == VISITED) continue;
+                marked[w] = VISITED;
                 distTo[w] = distTo[v] + 1;
                 queue.enqueue(w);
             }
