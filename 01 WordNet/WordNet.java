@@ -1,7 +1,6 @@
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.StdOut;
 import edu.princeton.cs.algs4.Digraph;
-import edu.princeton.cs.algs4.SET;
 import edu.princeton.cs.algs4.Bag;
 import edu.princeton.cs.algs4.SeparateChainingHashST;
 import edu.princeton.cs.algs4.DirectedCycle;
@@ -14,7 +13,7 @@ public class WordNet {
     private final SeparateChainingHashST<String, Bag<Integer>> nouns;
 
     // vertex index -> synset(i.e., vertex in graph)
-    private final ArrayList<SET<String>> synsets;
+    private final ArrayList<String> synsets;
 
     // Graph data structure
     private final Digraph digraph;
@@ -33,13 +32,10 @@ public class WordNet {
             int index = Integer.parseInt(fields[0]);
             assert index == synsets.size();
 
+            synsets.add(fields[1]);
             String[] words = fields[1].split("\\s");
-            SET<String> set = new SET<>();
 
             for (String word : words) {
-                // add to synsets
-                set.add(word);
-
                 // add to st
                 if (!nouns.contains(word)) {
                     nouns.put(word, new Bag<>());
@@ -47,7 +43,6 @@ public class WordNet {
                 nouns.get(word).add(index);
             }
 
-            synsets.add(set);
         }
     }
 
@@ -142,15 +137,7 @@ public class WordNet {
         }
 
         int ancestor = sap.ancestor(nouns.get(nounA), nouns.get(nounB));
-        SET<String> set = synsets.get(ancestor);
-
-        StringBuilder s = new StringBuilder();
-        for (String word : set) {
-            s.append(word).append(" ");
-        }
-        s.deleteCharAt(s.length() - 1);
-
-        return s.toString();
+        return synsets.get(ancestor);
     }
 
     // do unit testing of this class
