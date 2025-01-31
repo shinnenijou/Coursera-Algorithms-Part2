@@ -45,9 +45,16 @@ public class SAP {
     private final ArrayList<Integer> listA;
     private final ArrayList<Integer> listB;
 
-    private void validateVertex(Integer v) {
-        if (v == null || v < 0 || v >= G.V())
-            throw new IllegalArgumentException("vertex " + v + " is not between 0 and " + (G.V() - 1));
+    private void validateVertexSet(Iterable<Integer> set) {
+        if (set == null) {
+            throw new IllegalArgumentException("vertex set is null");
+        }
+
+        for (Integer v : set) {
+            if (v == null || v < 0 || v >= G.V()){
+                throw new IllegalArgumentException("vertex " + v + " is not between 0 and " + (G.V() - 1));
+            }
+        }
     }
 
     private void bfs(Iterable<Integer> initSet, int[] distTo) {
@@ -76,13 +83,8 @@ public class SAP {
     }
 
     private Pair ancestorImpl(Iterable<Integer> setA, Iterable<Integer> setB) {
-        for (Integer v : setA) {
-            validateVertex(v);
-        }
-
-        for (Integer v : setB) {
-            validateVertex(v);
-        }
+        validateVertexSet(setA);
+        validateVertexSet(setB);
 
         bfs(setA, distToA);
         bfs(setB, distToB);
