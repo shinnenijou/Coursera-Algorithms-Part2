@@ -24,6 +24,17 @@ public class SAP {
         }
     }
 
+    private Digraph copy(Digraph digraph) {
+        Digraph newDigraph = new Digraph(digraph.V());
+        for (int v = 0; v < digraph.V(); v++){
+            for (int w : digraph.adj(v)){
+                newDigraph.addEdge(v, w);
+            }
+        }
+
+        return newDigraph;
+    }
+
     private final Digraph G;
     private final boolean[] marked;
     private final Queue<Integer> queue;
@@ -63,17 +74,17 @@ public class SAP {
         }
     }
 
-    private Pair ancestorImpl(Iterable<Integer> A, Iterable<Integer> B) {
-        for (int v : A) {
+    private Pair ancestorImpl(Iterable<Integer> setA, Iterable<Integer> setB) {
+        for (int v : setA) {
             validateVertex(v);
         }
 
-        for (int v : B) {
+        for (int v : setB) {
             validateVertex(v);
         }
 
-        bfs(A, distToA);
-        bfs(B, distToB);
+        bfs(setA, distToA);
+        bfs(setB, distToB);
 
         Pair p = new Pair(-1, Integer.MAX_VALUE);
 
@@ -93,7 +104,7 @@ public class SAP {
     public SAP(Digraph graph) {
         if (graph == null) throw new IllegalArgumentException("graph == null");
 
-        G = graph;
+        G = copy(graph);
         marked = new boolean[G.V()];
         distToA = new int[G.V()];
         distToB = new int[G.V()];
@@ -121,13 +132,13 @@ public class SAP {
     }
 
     // length of shortest ancestral path between any vertex in v and any vertex in w; -1 if no such path
-    public int length(Iterable<Integer> A, Iterable<Integer> B) {
-        return ancestorImpl(A, B).second;
+    public int length(Iterable<Integer> setA, Iterable<Integer> setB) {
+        return ancestorImpl(setA, setB).second;
     }
 
     // a common ancestor that participates in shortest ancestral path; -1 if no such path
-    public int ancestor(Iterable<Integer> A, Iterable<Integer> B) {
-        return ancestorImpl(A, B).first;
+    public int ancestor(Iterable<Integer> setA, Iterable<Integer> setB) {
+        return ancestorImpl(setA, setB).first;
     }
 
     // do unit testing of this class
