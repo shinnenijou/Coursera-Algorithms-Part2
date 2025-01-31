@@ -35,6 +35,14 @@ public class SAP {
         return newDigraph;
     }
 
+    private static void clean(int[] distTo, ArrayList<Integer> cleaner) {
+        for (Integer v : cleaner){
+            distTo[v] = -1;
+        }
+
+        cleaner.clear();
+    }
+
     private final Digraph G;
     private final boolean[] marked;
     private final Queue<Integer> queue;
@@ -44,6 +52,10 @@ public class SAP {
     // helper container to transfer parameter
     private final ArrayList<Integer> listA;
     private final ArrayList<Integer> listB;
+
+    // helper container to re-initialize dist array
+    private final ArrayList<Integer> cleanerA;
+    private final ArrayList<Integer> cleanerB;
 
     private void validateVertexSet(Iterable<Integer> set) {
         if (set == null) {
@@ -57,17 +69,12 @@ public class SAP {
         }
     }
 
-    private void bfs(Iterable<Integer> initSet, int[] distTo) {
-        Arrays.fill(distTo, -1);
-        Arrays.fill(marked, UNVISITED);
-        while (!queue.isEmpty()) {
-            queue.dequeue();
-        }
-
+    private void bfs(Iterable<Integer> initSet, int[] distTo, ArrayList<Integer> cleaner) {
         for (int v : initSet) {
             queue.enqueue(v);
             marked[v] = VISITED;
             distTo[v] = 0;
+            cleaner.add(v);
         }
 
         while (!queue.isEmpty()) {
@@ -77,8 +84,13 @@ public class SAP {
                 if (marked[w] == VISITED) continue;
                 marked[w] = VISITED;
                 distTo[w] = distTo[v] + 1;
+                cleaner.add(w);
                 queue.enqueue(w);
             }
+        }
+
+        for (int v : cleaner) {
+            marked[v] = UNVISITED;
         }
     }
 
@@ -86,17 +98,27 @@ public class SAP {
         validateVertexSet(setA);
         validateVertexSet(setB);
 
-        bfs(setA, distToA);
-        bfs(setB, distToB);
+        bfs(setA, distToA, cleanerA);
+        bfs(setB, distToB, cleanerB);
 
         Pair p = new Pair(-1, Integer.MAX_VALUE);
 
-        for (int i = 0; i < distToA.length; i++) {
-            if (distToA[i] > -1 && distToB[i] > -1 && distToA[i] + distToB[i] < p.second) {
-                p.first = i;
-                p.second = distToA[i] + distToB[i];
+        for (int v: cleanerA) {
+            if (distToA[v] > -1 && distToB[v] > -1 && distToA[v] + distToB[v] < p.second) {
+                p.first = v;
+                p.second = distToA[v] + distToB[v];
             }
         }
+
+        for (int v: cleanerB) {
+            if (distToA[v] > -1 && distToB[v] > -1 && distToA[v] + distToB[v] < p.second) {
+                p.first = v;
+                p.second = distToA[v] + distToB[v];
+            }
+        }
+
+        clean(distToA, cleanerA);
+        clean(distToB, cleanerB);
 
         if (p.second == Integer.MAX_VALUE) p.second = -1;
 
@@ -110,10 +132,14 @@ public class SAP {
         G = copy(graph);
         marked = new boolean[G.V()];
         distToA = new int[G.V()];
+        Arrays.fill(distToA, -1);
         distToB = new int[G.V()];
+        Arrays.fill(distToB, -1);
         queue = new Queue<>();
         listA = new ArrayList<>();
         listB = new ArrayList<>();
+        cleanerA = new ArrayList<>();
+        cleanerB = new ArrayList<>();
     }
 
     // length of shortest ancestral path between v and w; -1 if no such path
