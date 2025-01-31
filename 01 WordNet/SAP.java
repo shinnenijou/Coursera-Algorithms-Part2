@@ -10,9 +10,8 @@ import java.util.Arrays;
 
 
 public class SAP {
-    private static final char UNVISITED = 0;
-    private static final char PASS1VISITED = 1;
-    private static final char PASS2VISITED = 2;
+    private static final boolean UNVISITED = false;
+    private static final boolean VISITED = true;
 
     // helper class to return two value from function call
     private static class Pair {
@@ -26,11 +25,12 @@ public class SAP {
     }
 
     private final Digraph G;
-    private final char[] marked;
-    private final int[] distTo;
+    private final boolean[] marked;
     private final Queue<Integer> queue;
+    private final int[] distToA;
+    private final int[] distToB;
 
-    // help container to transfer parameter
+    // helper container to transfer parameter
     private final ArrayList<Integer> listA;
     private final ArrayList<Integer> listB;
 
@@ -39,21 +39,13 @@ public class SAP {
             throw new IllegalArgumentException("vertex " + v + " is not between 0 and " + (G.V() - 1));
     }
 
-    // init before every query
-    private void init() {
-        Arrays.fill(marked, UNVISITED);
-
+    private void bfs(Iterable<Integer> initSet, int[] distTo) {
         Arrays.fill(distTo, -1);
-
+        Arrays.fill(marked, UNVISITED);
         while (!queue.isEmpty()) {
             queue.dequeue();
         }
 
-        listA.clear();
-        listB.clear();
-    }
-
-    private void bfs1pass(Iterable<Integer> initSet) {
         for (int v : initSet) {
             queue.enqueue(v);
             distTo[v] = 0;
@@ -61,41 +53,14 @@ public class SAP {
 
         while (!queue.isEmpty()) {
             int v = queue.dequeue();
-            marked[v] = PASS1VISITED;
+            marked[v] = VISITED;
 
             for (int w : G.adj(v)) {
-                if (marked[w] == PASS1VISITED) continue;
+                if (marked[w] == VISITED) continue;
                 distTo[w] = distTo[v] + 1;
                 queue.enqueue(w);
             }
         }
-    }
-
-    private Pair bfs2pass(Iterable<Integer> initSet) {
-        for (int v : initSet) {
-            // special case: ancestor is in B, leading to overwrite distTo[v] incorrectly
-            if (marked[v] == PASS1VISITED) {
-                return new Pair(v, distTo[v]);
-            }
-            queue.enqueue(v);
-            distTo[v] = 0;
-        }
-
-        while (!queue.isEmpty()) {
-            int v = queue.dequeue();
-            marked[v] = PASS2VISITED;
-
-            for (int w : G.adj(v)) {
-                if (marked[w] == PASS2VISITED) continue;
-                if (marked[w] == PASS1VISITED) {
-                    return new Pair(w, distTo[w] + distTo[v] + 1);
-                }
-                distTo[w] = distTo[v] + 1;
-                queue.enqueue(w);
-            }
-        }
-
-        return new Pair(-1, -1);
     }
 
     private Pair ancestorImpl(Iterable<Integer> A, Iterable<Integer> B) {
@@ -107,8 +72,21 @@ public class SAP {
             validateVertex(v);
         }
 
-        bfs1pass(A);
-        return bfs2pass(B);
+        bfs(A, distToA);
+        bfs(B, distToB);
+
+        Pair p = new Pair(-1, Integer.MAX_VALUE);
+
+        for (int i = 0; i < distToA.length; i++) {
+            if (distToA[i] > -1 && distToB[i] > -1 && distToA[i] + distToB[i] < p.second) {
+                p.first = i;
+                p.second = distToA[i] + distToB[i];
+            }
+        }
+
+        if (p.second == Integer.MAX_VALUE) p.second = -1;
+
+        return p;
     }
 
     // constructor takes a digraph (not necessarily a DAG)
@@ -116,8 +94,9 @@ public class SAP {
         if (graph == null) throw new IllegalArgumentException("graph == null");
 
         G = graph;
-        marked = new char[G.V()];
-        distTo = new int[G.V()];
+        marked = new boolean[G.V()];
+        distToA = new int[G.V()];
+        distToB = new int[G.V()];
         queue = new Queue<>();
         listA = new ArrayList<>();
         listB = new ArrayList<>();
@@ -125,29 +104,29 @@ public class SAP {
 
     // length of shortest ancestral path between v and w; -1 if no such path
     public int length(int v, int w) {
-        init();
+        listA.clear();
         listA.add(v);
+        listB.clear();
         listB.add(w);
         return ancestorImpl(listA, listB).second;
     }
 
     // a common ancestor of v and w that participates in a shortest ancestral path; -1 if no such path
     public int ancestor(int v, int w) {
-        init();
+        listA.clear();
         listA.add(v);
+        listB.clear();
         listB.add(w);
         return ancestorImpl(listA, listB).first;
     }
 
     // length of shortest ancestral path between any vertex in v and any vertex in w; -1 if no such path
     public int length(Iterable<Integer> A, Iterable<Integer> B) {
-        init();
         return ancestorImpl(A, B).second;
     }
 
     // a common ancestor that participates in shortest ancestral path; -1 if no such path
     public int ancestor(Iterable<Integer> A, Iterable<Integer> B) {
-        init();
         return ancestorImpl(A, B).first;
     }
 
