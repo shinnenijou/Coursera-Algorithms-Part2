@@ -74,7 +74,7 @@ public class SAP {
     private Pair bfs2pass(Iterable<Integer> initSet) {
         for (int v : initSet) {
             // special case: ancestor is in B, leading to overwrite distTo[v] incorrectly
-            if (marked[v] == PASS1VISITED){
+            if (marked[v] == PASS1VISITED) {
                 return new Pair(v, distTo[v]);
             }
             queue.enqueue(v);
