@@ -6,83 +6,29 @@ import edu.princeton.cs.algs4.Stopwatch;
 import java.util.Arrays;
 
 public class SeamCarver {
-    private static final boolean VERTICAL = false;
-    private static final boolean HORIZONTAL = true;
-    private static final double BORDER_ENERGY = 1000;
-
-    private static int extractR(int argb) {
-        return (argb >> 16) & 0xFF;
-    }
-
-    private static int extractG(int argb) {
-        return (argb >> 8) & 0xFF;
-    }
-
-    private static int extractB(int argb) {
-        return argb & 0xFF;
-    }
-
-    private boolean status;
-    private Picture currentPic;
-
-    // energy cache
-    private final double[] energies;
+    private VirtualPicture pic;
 
     // helper container to find seam
     private final double[] distTo;
     private final int[] edgeTo;
 
-    private int toIndex(int x, int y) {
-        return y * width() + x;
-    }
-
-    // maybe not need to transpose picture?
-    // only transpose energies (distTo and edgeTo will be re-init during usage)
-    private void transpose(boolean direction) {
-        if (status == direction) return;
-
-        Picture picture = new Picture(height(), width());
-
-        for (int x = 0; x < width(); x++) {
-            for (int y = 0; y < height(); y++) {
-                picture.setARGB(y, x, currentPic.getARGB(x, y));
-            }
-        }
-
-        for (int x = 0; x < width(); x++) {
-            for (int y = 0; y < height(); y++) {
-                int oldIndex = y * width() + x;
-                int newIndex = x * height() + y;
-                double temp = energies[oldIndex];
-                energies[oldIndex] = energies[newIndex];
-                energies[newIndex] = temp;
-            }
-        }
-
-        status = direction;
-        currentPic = picture;
-    }
-
-    private void validateSeam(int[] seam, boolean direction) {
+    private void validateSeam(int[] seam) {
         if (seam == null) {
             throw new IllegalArgumentException("seam is null");
         }
 
-        int height = direction == status ? height() : width();
-        int width = direction == status ? width() : height();
-
-        if (seam.length != height) {
+        if (seam.length != pic.height()) {
             throw new IllegalArgumentException("seam.length out of bounds");
         }
 
-        if (width <= 1) {
+        if (pic.width() <= 1) {
             throw new IllegalArgumentException("picture cannot be carved");
         }
 
-        if (seam[0] < 0 || seam[0] >= width) throw new IllegalArgumentException("seam[0] out of bounds");
+        if (seam[0] < 0 || seam[0] >= pic.width()) throw new IllegalArgumentException("seam[0] out of bounds");
 
         for (int i = 1; i < seam.length; ++i) {
-            if (seam[i] < 0 || seam[i] >= width) throw new IllegalArgumentException("seam[0] out of bounds");
+            if (seam[i] < 0 || seam[i] >= pic.width()) throw new IllegalArgumentException("seam[0] out of bounds");
 
             if (Math.abs(seam[i] - seam[i - 1]) > 1) {
                 throw new IllegalArgumentException("seam out of adjacent pixels");
@@ -90,16 +36,18 @@ public class SeamCarver {
         }
     }
 
+    // virtual sight
     private void relaxAdj(int x, int y) {
-        if (y >= height() - 1) return;
+        if (y >= pic.height() - 1) return;
+        int virtualWidth = pic.width();
         int startX = Math.max(x - 1, 0);
-        int endX = Math.min(x + 2, width());
+        int endX = Math.min(x + 2, pic.width());
 
         for (int adj = startX; adj < endX; ++adj) {
             // v -> w
-            int v = toIndex(x, y);
-            int w = toIndex(adj, y + 1);
-            double weight = energy(adj, y + 1);
+            int v = y * virtualWidth + x;
+            int w = (y + 1) * virtualWidth + adj;
+            double weight = pic.getEnergy(adj, y + 1);
 
             if (distTo[v] + weight < distTo[w]) {
                 distTo[w] = distTo[v] + weight;
@@ -108,65 +56,26 @@ public class SeamCarver {
         }
     }
 
-    private void removeSeamEnergies(int[] seam) {
-        for (int y = 0; y < height(); ++y) {
-            int x = seam[y];
-
-            // up
-            if (y > 0) {
-                energies[toIndex(x, y - 1)] = Double.POSITIVE_INFINITY;
-            }
-
-            // down
-            if (y + 1 < height()) {
-                energies[toIndex(x, y + 1)] = Double.POSITIVE_INFINITY;
-            }
-
-            // left
-            if (x > 0) {
-                energies[toIndex(x - 1, y)] = Double.POSITIVE_INFINITY;
-            }
-
-            // right
-            if (x + 1 < width()) {
-                energies[toIndex(x + 1, y)] = Double.POSITIVE_INFINITY;
-            }
-        }
-
-        int step = 0;
-
-        for (int y = 0; y < height(); ++y) {
-            for (int x = 0; x < width(); ++x) {
-                if (x == seam[y]) {
-                    step++;
-                    continue;
-                }
-
-                int index = toIndex(x, y);
-                energies[index - step] = energies[index];
-            }
-        }
-    }
-
-    // suppose vertical seam
+    // virtual sight
     private int[] findSeam() {
-        int width = width();
-        int height = height();
+        int virtualWidth = pic.width();
+        int virtualHeight = pic.height();
+        int virtualLength = virtualHeight * virtualWidth;
 
-        Arrays.fill(distTo, 0, width, 0);
-        Arrays.fill(distTo, width, distTo.length, Double.POSITIVE_INFINITY);
-        Arrays.fill(edgeTo, -1);
+        Arrays.fill(distTo, 0, virtualWidth, 0);
+        Arrays.fill(distTo, virtualWidth, virtualLength, Double.POSITIVE_INFINITY);
+        Arrays.fill(edgeTo, 0, virtualLength, -1);
 
         // topological order, which is constant in this problem
         // equivalent to dynamic programming
-        for (int i = width - 1; i >= 0; --i) {
-            for (int y = 0, x = i; y < height && x < width; ++y, ++x) {
+        for (int i = virtualWidth - 1; i >= 0; --i) {
+            for (int y = 0, x = i; y < virtualHeight && x < virtualWidth; ++y, ++x) {
                 relaxAdj(x, y);
             }
         }
 
-        for (int i = 1; i < height; ++i) {
-            for (int y = i, x = 0; y < height && x < width; ++y, ++x) {
+        for (int i = 1; i < virtualHeight; ++i) {
+            for (int y = i, x = 0; y < virtualHeight && x < virtualWidth; ++y, ++x) {
                 relaxAdj(x, y);
             }
         }
@@ -174,17 +83,17 @@ public class SeamCarver {
         int minIndex = -1;
         double min = Double.POSITIVE_INFINITY;
 
-        for (int index = toIndex(0, height - 1); index < distTo.length; ++index) {
+        for (int index = (virtualHeight - 1) * virtualWidth; index < virtualLength; ++index) {
             if (distTo[index] < min) {
                 min = distTo[index];
                 minIndex = index;
             }
         }
 
-        int[] seam = new int[height];
+        int[] seam = new int[virtualHeight];
 
-        for (int y = height - 1; y >= 0; --y) {
-            int x = minIndex % width;
+        for (int y = virtualHeight - 1; y >= 0; --y) {
+            int x = minIndex % virtualWidth;
             seam[y] = x;
             minIndex = edgeTo[minIndex];
         }
@@ -193,22 +102,10 @@ public class SeamCarver {
     }
 
     private void removeSeam(int[] seam) {
-        Picture newPic = new Picture(width() - 1, height());
-
-        for (int y = 0; y < height(); ++y) {
-            for (int x = 0; x < seam[y]; ++x) {
-                newPic.setARGB(x, y, currentPic.getARGB(x, y));
-            }
-
-            for (int x = seam[y] + 1; x < width(); ++x) {
-                newPic.setARGB(x - 1, y, currentPic.getARGB(x, y));
-            }
+        for (int y = 0; y < seam.length; ++y) {
+            pic.removePixel(seam[y], y);
         }
-
-        // re-init energies cache before replace picture
-        // leaving changed energies Double.POSITIVE_INFINITE
-        removeSeamEnergies(seam);
-        currentPic = newPic;
+        pic.carve();
     }
 
     // create a seam carver object based on the given picture
@@ -217,28 +114,24 @@ public class SeamCarver {
             throw new IllegalArgumentException();
         }
 
-        currentPic = new Picture(picture);
-        status = VERTICAL;
+        pic = new VirtualPicture(picture);
         distTo = new double[width() * height()];
         edgeTo = new int[width() * height()];
-        energies = new double[width() * height()];
-        Arrays.fill(energies, Double.POSITIVE_INFINITY);
     }
 
     // current picture
     public Picture picture() {
-        transpose(VERTICAL);
-        return new Picture(currentPic);
+        return pic.picture();
     }
 
     // width of current picture
     public int width() {
-        return currentPic.width();
+        return pic.status() == VirtualPicture.ORIGIN ? pic.width() : pic.height();
     }
 
     // height of current picture
     public int height() {
-        return currentPic.height();
+        return pic.status() == VirtualPicture.ORIGIN ? pic.height() : pic.width();
     }
 
     // energy of pixel at column x and row y
@@ -251,64 +144,36 @@ public class SeamCarver {
             throw new IllegalArgumentException("y out of bounds, must be between 0 and " + (height() - 1));
         }
 
-        int cacheIndex = toIndex(x, y);
-
-        if (energies[cacheIndex] != Double.POSITIVE_INFINITY) {
-            return energies[cacheIndex];
-        }
-
-        if (x == 0 || x == width() - 1 || y == 0 || y == height() - 1) {
-            energies[cacheIndex] = BORDER_ENERGY;
-            return BORDER_ENERGY;
-        }
-
-        int argb1 = currentPic.getARGB(x + 1, y);
-        int argb2 = currentPic.getARGB(x - 1, y);
-
-        int rx = extractR(argb1) - extractR(argb2);
-        int gx = extractG(argb1) - extractG(argb2);
-        int bx = extractB(argb1) - extractB(argb2);
-
-        double deltaX = rx * rx + gx * gx + bx * bx;
-
-        argb1 = currentPic.getARGB(x, y + 1);
-        argb2 = currentPic.getARGB(x, y - 1);
-
-        int ry = extractR(argb1) - extractR(argb2);
-        int gy = extractG(argb1) - extractG(argb2);
-        int by = extractB(argb1) - extractB(argb2);
-
-        double deltaY = ry * ry + gy * gy + by * by;
-        energies[cacheIndex] = Math.sqrt(deltaX + deltaY);
-
-        return energies[cacheIndex];
+        int virtualCol = pic.status() == VirtualPicture.ORIGIN ? x : y;
+        int virtualRow = pic.status() == VirtualPicture.ORIGIN ? y : x;
+        return pic.getEnergy(virtualCol, virtualRow);
     }
 
     // sequence of indices for horizontal seam
     public int[] findHorizontalSeam() {
-        transpose(HORIZONTAL);
+        pic.transpose(VirtualPicture.TRANSPOSED);
         return findSeam();
     }
 
     // sequence of indices for vertical seam
     public int[] findVerticalSeam() {
-        transpose(VERTICAL);
+        pic.transpose(VirtualPicture.ORIGIN);
         return findSeam();
     }
 
     // remove horizontal seam from current picture
     public void removeHorizontalSeam(int[] seam) {
         // must validate before transpose since given seam throw exception
-        validateSeam(seam, HORIZONTAL);
-        transpose(HORIZONTAL);
+        pic.transpose(VirtualPicture.TRANSPOSED);
+        validateSeam(seam);
         removeSeam(seam);
     }
 
     // remove vertical seam from current picture
     public void removeVerticalSeam(int[] seam) {
         // must validate before transpose since given seam throw exception
-        validateSeam(seam, VERTICAL);
-        transpose(VERTICAL);
+        pic.transpose(VirtualPicture.ORIGIN);
+        validateSeam(seam);
         removeSeam(seam);
     }
 
@@ -332,22 +197,47 @@ public class SeamCarver {
         Picture picture = new Picture(args[0]);
 
         SeamCarver seamCarver = new SeamCarver(picture);
-        int count = 0;
+        StdOut.println("------");
+        StdOut.println("Width: " + seamCarver.width());
+        StdOut.println("Height: " + seamCarver.height());
+
+        int verticalCount = StdRandom.uniformInt(1, picture.width());
+        int horizontalCount = StdRandom.uniformInt(1, picture.height());
+
+        StdOut.println("Do vertical(decrease width): " + verticalCount);
+        StdOut.println("Do horizontal(decrease height): " + horizontalCount);
 
         Stopwatch stopwatch = new Stopwatch();
 
-        count = picture.height() / 2;
+        int i = 0; // vertical seam
+        int j = 0; // horizontal seam
+        while (i < verticalCount && j < horizontalCount) {
+            if (StdRandom.bernoulli((double) (verticalCount - i) / (verticalCount + horizontalCount - i - j))) {
+                seamCarver.removeVerticalSeam(seamCarver.findVerticalSeam());
+                i++;
+            } else {
+                seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
+                j++;
+            }
 
-        for (int i = 0; i < count; ++i) {
-            seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
+            assert seamCarver.width() + i == picture.width();
+            assert seamCarver.height() + j == picture.height();
         }
 
-        count = picture.width() / 2;
-
-        for (int i = 0; i < count; ++i) {
+        while (i < verticalCount) {
             seamCarver.removeVerticalSeam(seamCarver.findVerticalSeam());
+            i++;
+        }
+
+        while (j < horizontalCount) {
+            seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
+            j++;
         }
 
         StdOut.println("Elapsed time: " + stopwatch.elapsedTime());
+        StdOut.println("Width: " + seamCarver.width());
+        StdOut.println("Height: " + seamCarver.height());
+
+        seamCarver.picture().show();
     }
 }
