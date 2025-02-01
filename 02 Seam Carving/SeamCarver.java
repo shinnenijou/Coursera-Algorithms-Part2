@@ -26,11 +26,11 @@ public class SeamCarver {
     private Picture currentPic;
 
     // energy cache
-    double[] energies;
+    private final double[] energies;
 
     // helper container to find seam
-    double[] distTo;
-    int[] edgeTo;
+    private final double[] distTo;
+    private final int[] edgeTo;
 
     private int toIndex(int x, int y) {
         return y * width() + x;
