@@ -128,7 +128,7 @@ public class SeamCarver {
             }
 
             // right
-            if (y > 0) {
+            if (x + 1 < width()) {
                 energies[toIndex(x + 1, y)] = Double.POSITIVE_INFINITY;
             }
         }
@@ -328,16 +328,34 @@ public class SeamCarver {
     // unit testing (optional)
     public static void main(String[] args) {
         Picture picture = new Picture(args[0]);
-        SeamCarver seamCarver = new SeamCarver(picture);
 
-        Stopwatch stopwatch = new Stopwatch();
+        // test 01
+        {
+            SeamCarver seamCarver = new SeamCarver(picture);
+            int count = 0;
 
-        for (int i = 0; i < picture.height() / 2; ++i) {
-            seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
+            Stopwatch stopwatch = new Stopwatch();
+
+            count = picture.height() / 2;
+
+            for (int i = 0; i < count; ++i) {
+                seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
+            }
+
+            count = picture.width() / 2;
+
+            for (int i = 0; i < count; ++i) {
+                seamCarver.removeVerticalSeam(seamCarver.findVerticalSeam());
+            }
+
+            StdOut.println("Elapsed time: " + stopwatch.elapsedTime());
         }
 
-        StdOut.println("Elapsed time: " + stopwatch.elapsedTime());
-
-        seamCarver.picture().show();
+        // text 02: 7x10 seam = {4, 3, 3, 4, 4, 5, 6, 6, 5, 6 }
+        {
+            SeamCarver seamCarver = new SeamCarver(picture);
+            int[] seam = {4, 3, 3, 4, 4, 5, 6, 6, 5, 6 };
+            seamCarver.removeVerticalSeam(seam);
+        }
     }
 }
