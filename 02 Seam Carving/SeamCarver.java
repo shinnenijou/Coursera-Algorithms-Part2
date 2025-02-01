@@ -201,8 +201,8 @@ public class SeamCarver {
         StdOut.println("Width: " + seamCarver.width());
         StdOut.println("Height: " + seamCarver.height());
 
-        int verticalCount = StdRandom.uniformInt(1, picture.width());
-        int horizontalCount = StdRandom.uniformInt(1, picture.height());
+        int verticalCount = picture.width() / 2;
+        int horizontalCount = picture.height() / 2;
 
         StdOut.println("Do vertical(decrease width): " + verticalCount);
         StdOut.println("Do horizontal(decrease height): " + horizontalCount);
