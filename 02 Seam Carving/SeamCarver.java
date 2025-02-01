@@ -63,13 +63,13 @@ public class SeamCarver {
         currentPic = picture;
     }
 
-    private void validateSeam(int[] seam) {
+    private void validateSeam(int[] seam, boolean direction) {
         if (seam == null) {
             throw new IllegalArgumentException("seam is null");
         }
 
-        int height = height();
-        int width = width();
+        int height = direction == status ? height() : width();
+        int width = direction == status ? width() : height();
 
         if (seam.length != height) {
             throw new IllegalArgumentException("seam.length out of bounds");
@@ -298,14 +298,16 @@ public class SeamCarver {
 
     // remove horizontal seam from current picture
     public void removeHorizontalSeam(int[] seam) {
-        validateSeam(seam);
+        // must validate before transpose since given seam throw exception
+        validateSeam(seam, HORIZONTAL);
         transpose(HORIZONTAL);
         removeSeam(seam);
     }
 
     // remove vertical seam from current picture
     public void removeVerticalSeam(int[] seam) {
-        validateSeam(seam);
+        // must validate before transpose since given seam throw exception
+        validateSeam(seam, VERTICAL);
         transpose(VERTICAL);
         removeSeam(seam);
     }
@@ -329,33 +331,23 @@ public class SeamCarver {
     public static void main(String[] args) {
         Picture picture = new Picture(args[0]);
 
-        // test 01
-        {
-            SeamCarver seamCarver = new SeamCarver(picture);
-            int count = 0;
+        SeamCarver seamCarver = new SeamCarver(picture);
+        int count = 0;
 
-            Stopwatch stopwatch = new Stopwatch();
+        Stopwatch stopwatch = new Stopwatch();
 
-            count = picture.height() / 2;
+        count = picture.height() / 2;
 
-            for (int i = 0; i < count; ++i) {
-                seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
-            }
-
-            count = picture.width() / 2;
-
-            for (int i = 0; i < count; ++i) {
-                seamCarver.removeVerticalSeam(seamCarver.findVerticalSeam());
-            }
-
-            StdOut.println("Elapsed time: " + stopwatch.elapsedTime());
+        for (int i = 0; i < count; ++i) {
+            seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
         }
 
-        // text 02: 7x10 seam = {4, 3, 3, 4, 4, 5, 6, 6, 5, 6 }
-        {
-            SeamCarver seamCarver = new SeamCarver(picture);
-            int[] seam = {4, 3, 3, 4, 4, 5, 6, 6, 5, 6 };
-            seamCarver.removeVerticalSeam(seam);
+        count = picture.width() / 2;
+
+        for (int i = 0; i < count; ++i) {
+            seamCarver.removeVerticalSeam(seamCarver.findVerticalSeam());
         }
+
+        StdOut.println("Elapsed time: " + stopwatch.elapsedTime());
     }
 }
