@@ -228,7 +228,7 @@ public class SeamCarver {
     // current picture
     public Picture picture() {
         transpose(VERTICAL);
-        return currentPic;
+        return new Picture(currentPic);
     }
 
     // width of current picture
