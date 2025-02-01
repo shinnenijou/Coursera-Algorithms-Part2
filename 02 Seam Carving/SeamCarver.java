@@ -110,28 +110,26 @@ public class SeamCarver {
 
     private void removeSeamEnergies(int[] seam) {
         for (int y = 0; y < height(); ++y) {
-            for (int x = 0; x < width(); ++x) {
-                if (x != seam[y]) continue;
+            int x = seam[y];
 
-                // up
-                if (y > 0) {
-                    energies[toIndex(x, y - 1)] = Double.POSITIVE_INFINITY;
-                }
+            // up
+            if (y > 0) {
+                energies[toIndex(x, y - 1)] = Double.POSITIVE_INFINITY;
+            }
 
-                // down
-                if (y + 1 < height()) {
-                    energies[toIndex(x, y + 1)] = Double.POSITIVE_INFINITY;
-                }
+            // down
+            if (y + 1 < height()) {
+                energies[toIndex(x, y + 1)] = Double.POSITIVE_INFINITY;
+            }
 
-                // left
-                if (x > 0) {
-                    energies[toIndex(x - 1, y)] = Double.POSITIVE_INFINITY;
-                }
+            // left
+            if (x > 0) {
+                energies[toIndex(x - 1, y)] = Double.POSITIVE_INFINITY;
+            }
 
-                // right
-                if (y > 0) {
-                    energies[toIndex(x + 1, y)] = Double.POSITIVE_INFINITY;
-                }
+            // right
+            if (y > 0) {
+                energies[toIndex(x + 1, y)] = Double.POSITIVE_INFINITY;
             }
         }
 
@@ -224,12 +222,7 @@ public class SeamCarver {
         distTo = new double[width() * height()];
         edgeTo = new int[width() * height()];
         energies = new double[width() * height()];
-
-        for (int x = 0; x < width(); ++x) {
-            for (int y = 0; y < height(); ++y) {
-                energy(x, y);
-            }
-        }
+        Arrays.fill(energies, Double.POSITIVE_INFINITY);
     }
 
     // current picture
@@ -339,8 +332,8 @@ public class SeamCarver {
 
         Stopwatch stopwatch = new Stopwatch();
 
-        for (int i = 0; i < picture.width() / 2; ++i) {
-            seamCarver.removeVerticalSeam(seamCarver.findVerticalSeam());
+        for (int i = 0; i < picture.height() / 2; ++i) {
+            seamCarver.removeHorizontalSeam(seamCarver.findHorizontalSeam());
         }
 
         StdOut.println("Elapsed time: " + stopwatch.elapsedTime());
