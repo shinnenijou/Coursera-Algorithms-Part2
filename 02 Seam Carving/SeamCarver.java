@@ -8,10 +8,6 @@ import java.util.Arrays;
 public class SeamCarver {
     private VirtualPicture pic;
 
-    // helper container to find seam
-    private final double[] distTo;
-    private final int[] edgeTo;
-
     private void validateSeam(int[] seam) {
         if (seam == null) {
             throw new IllegalArgumentException("seam is null");
@@ -37,7 +33,7 @@ public class SeamCarver {
     }
 
     // virtual sight
-    private void relaxAdj(int x, int y) {
+    private void relaxAdj(double[] distTo, int[] edgeTo, int x, int y) {
         if (y >= pic.height() - 1) return;
         int virtualWidth = pic.width();
         int startX = Math.max(x - 1, 0);
@@ -60,30 +56,32 @@ public class SeamCarver {
     private int[] findSeam() {
         int virtualWidth = pic.width();
         int virtualHeight = pic.height();
-        int virtualLength = virtualHeight * virtualWidth;
 
+        double[] distTo = new double[virtualHeight * virtualWidth];
         Arrays.fill(distTo, 0, virtualWidth, 0);
-        Arrays.fill(distTo, virtualWidth, virtualLength, Double.POSITIVE_INFINITY);
-        Arrays.fill(edgeTo, 0, virtualLength, -1);
+        Arrays.fill(distTo, virtualWidth, distTo.length, Double.POSITIVE_INFINITY);
+
+        int[] edgeTo = new int[virtualWidth * virtualHeight];
+        Arrays.fill(edgeTo, 0, edgeTo.length, -1);
 
         // topological order, which is constant in this problem
         // equivalent to dynamic programming
         for (int i = virtualWidth - 1; i >= 0; --i) {
             for (int y = 0, x = i; y < virtualHeight && x < virtualWidth; ++y, ++x) {
-                relaxAdj(x, y);
+                relaxAdj(distTo, edgeTo, x, y);
             }
         }
 
         for (int i = 1; i < virtualHeight; ++i) {
             for (int y = i, x = 0; y < virtualHeight && x < virtualWidth; ++y, ++x) {
-                relaxAdj(x, y);
+                relaxAdj(distTo, edgeTo, x, y);
             }
         }
 
         int minIndex = -1;
         double min = Double.POSITIVE_INFINITY;
 
-        for (int index = (virtualHeight - 1) * virtualWidth; index < virtualLength; ++index) {
+        for (int index = (virtualHeight - 1) * virtualWidth; index < distTo.length; ++index) {
             if (distTo[index] < min) {
                 min = distTo[index];
                 minIndex = index;
@@ -115,8 +113,6 @@ public class SeamCarver {
         }
 
         pic = new VirtualPicture(picture);
-        distTo = new double[width() * height()];
-        edgeTo = new int[width() * height()];
     }
 
     // current picture
