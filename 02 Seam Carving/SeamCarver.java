@@ -6,7 +6,7 @@ import edu.princeton.cs.algs4.Stopwatch;
 import java.util.Arrays;
 
 public class SeamCarver {
-    private VirtualPicture pic;
+    private final VirtualPicture pic;
 
     private void validateSeam(int[] seam) {
         if (seam == null) {
