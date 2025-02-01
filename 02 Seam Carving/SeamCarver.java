@@ -1,5 +1,6 @@
 import edu.princeton.cs.algs4.Picture;
 import edu.princeton.cs.algs4.StdOut;
+import edu.princeton.cs.algs4.Stopwatch;
 import java.util.Arrays;
 
 public class SeamCarver {
@@ -19,7 +20,6 @@ public class SeamCarver {
         return argb & 0xFF;
     }
 
-    private final Picture originPic;
     private Picture currentPic;
 
     private int dimension(boolean axis) {
@@ -78,8 +78,7 @@ public class SeamCarver {
             throw new IllegalArgumentException();
         }
 
-        originPic = picture;
-        currentPic = picture;
+        currentPic = new Picture(picture);
     }
 
     // current picture
@@ -138,6 +137,8 @@ public class SeamCarver {
         int[] edgeTo = new int[width() * height()];
         Arrays.fill(edgeTo, -1);
 
+        // topological order, which is constant in this problem
+        // equivalent to dynamic programming
         for (int i = posDimension - 1; i >= 0; --i) {
             for (int level = 0, pos = i; level < levelDimension && pos < posDimension; ++level, ++pos) {
                 relaxAdj(direction, distTo, edgeTo, pos, posDimension, level, levelDimension);
@@ -175,12 +176,12 @@ public class SeamCarver {
 
     // sequence of indices for horizontal seam
     public int[] findHorizontalSeam() {
-        return findSeam(Y_AXIS);
+        return findSeam(X_AXIS);
     }
 
     // sequence of indices for vertical seam
     public int[] findVerticalSeam() {
-        return findSeam(X_AXIS);
+        return findSeam(Y_AXIS);
     }
 
     // remove horizontal seam from current picture
@@ -247,22 +248,14 @@ public class SeamCarver {
     // unit testing (optional)
     public static void main(String[] args) {
         Picture picture = new Picture(args[0]);
-
         SeamCarver seamCarver = new SeamCarver(picture);
-        StdOut.println(seamCarver);
 
-        for (int x : seamCarver.findVerticalSeam()) {
-            StdOut.print(x + " ");
+        Stopwatch stopwatch = new Stopwatch();
+
+        for (int i = 0; i < picture.width() / 2; ++i) {
+            seamCarver.removeVerticalSeam(seamCarver.findVerticalSeam());
         }
 
-        StdOut.println();
-
-        for (int y : seamCarver.findHorizontalSeam()) {
-            StdOut.print(y + " ");
-        }
-
-        StdOut.println();
-
-//        picture.show();
+        StdOut.println("Elapsed time: " + stopwatch.elapsedTime());
     }
 }
