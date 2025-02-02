@@ -25,7 +25,7 @@ public class FlowNetwork {
             this.vertices[i] = new Bag<>();
         }
 
-        for (int v = 0; v < this.V; v++){
+        for (int v = 0; v < this.V; v++) {
             for (FlowEdge e : other.vertices[v]) {
                 FlowEdge edge = new FlowEdge(e);
                 E++;

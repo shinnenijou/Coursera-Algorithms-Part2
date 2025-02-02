@@ -1,4 +1,5 @@
 import java.util.Arrays;
+
 import edu.princeton.cs.algs4.Queue;
 
 public class FordFulkerson {
@@ -26,18 +27,18 @@ public class FordFulkerson {
         }
     }
 
-    public boolean inCut(int v){
+    public boolean inCut(int v) {
         return marked[v];
     }
 
-    public int value(){
+    public int value() {
         return value;
     }
 
-    public String toString(){
+    public String toString() {
         StringBuilder s = new StringBuilder();
 
-        for (int v = 0; v < marked.length; v++){
+        for (int v = 0; v < marked.length; v++) {
             s.append("vertex ").append(v).append(": ").append(marked[v]).append("\n");
         }
 
@@ -46,7 +47,7 @@ public class FordFulkerson {
         return s.toString();
     }
 
-    private boolean hasAugmentingPath(FlowNetwork G, FlowEdge[] edgeTo, int source, int target){
+    private boolean hasAugmentingPath(FlowNetwork G, FlowEdge[] edgeTo, int source, int target) {
         Arrays.fill(marked, false);
         Arrays.fill(edgeTo, null);
 
@@ -55,7 +56,7 @@ public class FordFulkerson {
         marked[source] = true;
 
         // augmenting path strategy: shortest (BFS)
-        while (!queue.isEmpty()){
+        while (!queue.isEmpty()) {
             int v = queue.dequeue();
 
             for (FlowEdge e : G.adj(v)) {
