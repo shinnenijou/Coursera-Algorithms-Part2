@@ -4,12 +4,11 @@ import edu.princeton.cs.algs4.Queue;
 public class FordFulkerson {
     private final boolean[] marked;
     private int value;
-    private final FlowEdge[] edgeTo;
 
     public FordFulkerson(FlowNetwork G, int s, int t) {
         FlowNetwork graph = new FlowNetwork(G);
         marked = new boolean[graph.V()];
-        edgeTo = new FlowEdge[graph.V()];
+        FlowEdge[] edgeTo = new FlowEdge[graph.V()];
         value = 0;
 
         while (hasAugmentingPath(graph, edgeTo, s, t)) {

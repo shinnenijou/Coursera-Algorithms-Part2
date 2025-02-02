@@ -33,7 +33,7 @@ public class BaseballElimination {
 
         for (int i = 0; i < teamNum && file.hasNextLine(); ++i) {
             String line = file.readLine();
-            String[] tokens = line.split("\\s+");
+            String[] tokens = line.strip().split("\\s+");
 
             // name win loss remain [schedule...]
             if (tokens.length < teamNum + 4) {
