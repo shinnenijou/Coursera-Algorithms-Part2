@@ -1,9 +1,207 @@
-import edu.princeton.cs.algs4.StdOut;
-import edu.princeton.cs.algs4.In;
-import edu.princeton.cs.algs4.SeparateChainingHashST;
-import edu.princeton.cs.algs4.Bag;
+import edu.princeton.cs.algs4.*;
+
+import java.util.Arrays;
 
 public class BaseballElimination {
+    private static class FlowEdge {
+        private final int from;
+        private final int to;
+        private final int capacity;
+        private int flow;
+
+        public FlowEdge(int v, int w, int capacity) {
+            this.from = v;
+            this.to = w;
+            this.capacity = capacity;
+            this.flow = 0;
+        }
+
+        public FlowEdge(FlowEdge e) {
+            this.from = e.from;
+            this.to = e.to;
+            this.capacity = e.capacity;
+            this.flow = 0;
+        }
+
+        public int from() {
+            return from;
+        }
+
+        public int to() {
+            return to;
+        }
+
+        public int other(int v) {
+            if (v == from) return to;
+            else if (v == to) return from;
+            else throw new IllegalArgumentException();
+        }
+
+        public int capacity() {
+            return capacity;
+        }
+
+        public int flow() {
+            return flow;
+        }
+
+        public int residualCapacityTo(int v) {
+            if (v == to) return capacity - flow;
+            else if (v == from) return flow;
+            else throw new IllegalArgumentException();
+        }
+
+        public void addResidualCapacityTo(int v, int delta) {
+            if (v == to) flow += delta;
+            else if (v == from) flow -= delta;
+            else throw new IllegalArgumentException();
+        }
+    }
+
+    private static class FlowNetwork {
+        private final int V;
+        private int E;
+        private final Bag<FlowEdge>[] vertices;
+
+        public FlowNetwork(int V) {
+            if (V < 0) throw new IllegalArgumentException("Number of vertices is negative");
+            this.V = V;
+            this.E = 0;
+            this.vertices = (Bag<FlowEdge>[]) new Bag[V];
+
+            for (int i = 0; i < V; i++) {
+                vertices[i] = new Bag<>();
+            }
+        }
+
+        public FlowNetwork(FlowNetwork other) {
+            this.V = other.V;
+            this.E = other.E;
+            this.vertices = (Bag<FlowEdge>[]) new Bag[this.V];
+
+            for (int i = 0; i < this.V; i++) {
+                this.vertices[i] = new Bag<>();
+            }
+
+            for (int v = 0; v < this.V; v++) {
+                for (FlowEdge e : other.vertices[v]) {
+                    FlowEdge edge = new FlowEdge(e);
+                    E++;
+                    this.vertices[edge.to()].add(edge);
+                    this.vertices[edge.from()].add(edge);
+                }
+            }
+        }
+
+        public int V() {
+            return V;
+        }
+
+        public int E() {
+            return E;
+        }
+
+        public void addEdge(FlowEdge edge) {
+            validateVertex(edge.from());
+            validateVertex(edge.to());
+            E++;
+            vertices[edge.to()].add(edge);
+            vertices[edge.from()].add(edge);
+        }
+
+        public Iterable<FlowEdge> adj(int v) {
+            validateVertex(v);
+            return vertices[v];
+        }
+
+        public Iterable<FlowEdge> edges() {
+            Bag<FlowEdge> bag = new Bag<>();
+
+            for (int i = 0; i < V; i++) {
+                for (FlowEdge e : adj(i)) {
+                    bag.add(e);
+                }
+            }
+
+            return bag;
+        }
+
+        private void validateVertex(int v) {
+            if (v < 0 || v >= V)
+                throw new IllegalArgumentException("vertex " + v + " must be between 0 and " + (V - 1));
+        }
+    }
+
+    private static class FordFulkerson {
+        private final boolean[] marked;
+        private int value;
+
+        public FordFulkerson(FlowNetwork G, int s, int t) {
+            FlowNetwork graph = new FlowNetwork(G);
+            marked = new boolean[graph.V()];
+            FlowEdge[] edgeTo = new FlowEdge[graph.V()];
+            value = 0;
+
+            while (hasAugmentingPath(graph, edgeTo, s, t)) {
+                int bottleneck = Integer.MAX_VALUE;
+
+                for (int v = t; v != s; v = edgeTo[v].other(v)) {
+                    bottleneck = Math.min(edgeTo[v].residualCapacityTo(v), bottleneck);
+                }
+
+                for (int v = t; v != s; v = edgeTo[v].other(v)) {
+                    edgeTo[v].addResidualCapacityTo(v, bottleneck);
+                }
+
+                value += bottleneck;
+            }
+        }
+
+        public boolean inCut(int v) {
+            return marked[v];
+        }
+
+        public int value() {
+            return value;
+        }
+
+        public String toString() {
+            StringBuilder s = new StringBuilder();
+
+            for (int v = 0; v < marked.length; v++) {
+                s.append("vertex ").append(v).append(": ").append(marked[v]).append("\n");
+            }
+
+            s.append("Total value: ").append(value).append("\n");
+
+            return s.toString();
+        }
+
+        private boolean hasAugmentingPath(FlowNetwork G, FlowEdge[] edgeTo, int source, int target) {
+            Arrays.fill(marked, false);
+            Arrays.fill(edgeTo, null);
+
+            Queue<Integer> queue = new Queue<>();
+            queue.enqueue(source);
+            marked[source] = true;
+
+            // augmenting path strategy: shortest (BFS)
+            while (!queue.isEmpty()) {
+                int v = queue.dequeue();
+
+                for (FlowEdge e : G.adj(v)) {
+                    int w = e.other(v);
+                    if (marked[w] || e.residualCapacityTo(w) <= 0) continue;
+                    marked[w] = true;
+                    edgeTo[w] = e;
+                    queue.enqueue(w);
+                }
+            }
+
+            return marked[target];
+        }
+    }
+
     private static int source(FlowNetwork graph) {
         return graph.V() - 2;
     }
