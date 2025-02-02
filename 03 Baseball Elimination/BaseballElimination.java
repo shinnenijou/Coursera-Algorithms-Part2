@@ -3,12 +3,16 @@ import edu.princeton.cs.algs4.SeparateChainingHashST;
 import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Bag;
 
+import edu.princeton.cs.algs4.FlowEdge;
+import edu.princeton.cs.algs4.FlowNetwork;
+import edu.princeton.cs.algs4.FordFulkerson;
+
 public class BaseballElimination {
-    private static int source(MyFlowNetwork graph) {
+    private static int source(FlowNetwork graph) {
         return graph.V() - 2;
     }
 
-    private static int target(MyFlowNetwork graph) {
+    private static int target(FlowNetwork graph) {
         return graph.V() - 1;
     }
 
@@ -106,8 +110,8 @@ public class BaseballElimination {
             return true;
         }
 
-        MyFlowNetwork graph = createMyFlowNetwork(team);
-        MyFordFulkerson solution = new MyFordFulkerson(graph, source(graph), target(graph));
+        FlowNetwork graph = createFlowNetwork(team);
+        FordFulkerson solution = new FordFulkerson(graph, source(graph), target(graph));
         StdOut.println("Value: " + solution.value());
 
         for (String s : teams.keys()) {
@@ -140,8 +144,8 @@ public class BaseballElimination {
             return bag;
         }
 
-        MyFlowNetwork graph = createMyFlowNetwork(team);
-        MyFordFulkerson solution = new MyFordFulkerson(graph, source(graph), target(graph));
+        FlowNetwork graph = createFlowNetwork(team);
+        FordFulkerson solution = new FordFulkerson(graph, source(graph), target(graph));
 
         Bag<String> bag = new Bag<>();
 
@@ -181,7 +185,7 @@ public class BaseballElimination {
         }
     }
 
-    private MyFlowNetwork createMyFlowNetwork(String team) {
+    private FlowNetwork createFlowNetwork(String team) {
         // 1 (source) + 1 (target) + games (exclude team x) + teams (exclude team x)
         int x = teams.get(team);
 
@@ -200,22 +204,22 @@ public class BaseballElimination {
 
         // [0, teams.size()) -> teams include team x for convenience
         // [teams.size(), graph.V() - 2) -> games
-        MyFlowNetwork graph = new MyFlowNetwork(1 + 1 + teams.size() + gameNum);
+        FlowNetwork graph = new FlowNetwork(1 + 1 + teams.size() + gameNum);
 
         int v = teams.size(); // current game vertex
 
         for (int i = 0; i < teams.size(); ++i) {
             if (i == x) continue;
 
-            graph.addEdge(new MyFlowEdge(i, target(graph), wins[x] + remaining[x] - wins[i]));
+            graph.addEdge(new FlowEdge(i, target(graph), wins[x] + remaining[x] - wins[i]));
 
             for (int j = i + 1; j < teams.size(); ++j) {
                 if (j == x) continue;
                 if (schedule[i][j] == 0) continue;
 
-                graph.addEdge(new MyFlowEdge(source(graph), v, schedule[i][j]));
-                graph.addEdge(new MyFlowEdge(v, i, Integer.MAX_VALUE));
-                graph.addEdge(new MyFlowEdge(v, j, Integer.MAX_VALUE));
+                graph.addEdge(new FlowEdge(source(graph), v, schedule[i][j]));
+                graph.addEdge(new FlowEdge(v, i, Integer.MAX_VALUE));
+                graph.addEdge(new FlowEdge(v, j, Integer.MAX_VALUE));
                 v++;
             }
         }
