@@ -29,7 +29,7 @@ public class BaseballElimination {
         losses = new int[teamNum];
         remaining = new int[teamNum];
         schedule = new int[teamNum][teamNum];
-        maxWin = Integer.MIN_VALUE;
+        maxWin = 0;
 
         for (int i = 0; i < teamNum && file.hasNextLine(); ++i) {
             String line = file.readLine();
@@ -53,7 +53,7 @@ public class BaseballElimination {
                 schedule[i][j] = Integer.parseInt(tokens[4 + j]);
             }
 
-            if (wins[i] > maxWin) {
+            if (wins[i] > wins[maxWin]) {
                 maxWin = i;
             }
         }
@@ -107,10 +107,11 @@ public class BaseballElimination {
         FlowNetwork graph = createFlowNetwork(team);
         FordFulkerson solution = new FordFulkerson(graph, source(graph), target(graph));
 
-        for (String s: teams.keys()){
+        for (String s : teams.keys()) {
             int i = teams.get(s);
-            if (i == x) continue;
-            if (solution.inCut(i < x ? i : i - 1)) return true;
+
+            // x is always false since no any edge connect to it
+            if (solution.inCut(i)) return true;
         }
 
         return false;
@@ -125,10 +126,9 @@ public class BaseballElimination {
         // trivial elimination
         if (wins[x] + remaining[x] < wins[maxWin]) {
             Bag<String> bag = new Bag<>();
-            bag.add(team);
 
             for (String s : teams.keys()) {
-                if (teams.get(s).equals(maxWin)){
+                if (teams.get(s) == maxWin) {
                     bag.add(s);
                     break;
                 }
@@ -142,16 +142,13 @@ public class BaseballElimination {
 
         Bag<String> bag = new Bag<>();
 
-        for (String s: teams.keys()){
+        for (String s : teams.keys()) {
             int i = teams.get(s);
-            if (i == x) continue;
-            if (!solution.inCut(i < x ? i : i - 1)) continue;
+            if (!solution.inCut(i)) continue;
             bag.add(s);
         }
 
         if (bag.isEmpty()) return null;
-
-        bag.add(team);
 
         return bag;
     }
@@ -185,63 +182,38 @@ public class BaseballElimination {
         // 1 (source) + 1 (target) + games (exclude team x) + teams (exclude team x)
         int x = teams.get(team);
 
-        // [0, teams.size() - 1) -> teams
-        // [teams.size() - 1, graph.V() - 2) -> games
-        FlowNetwork graph = new FlowNetwork(1 + 1 + (teams.size() - 1) * (teams.size() - 1) + teams.size() - 1);
+        // number of remaining games
+        int gameNum = (teams.size() - 1) * (teams.size() - 1) - teams.size() + 1;
 
-        int source = source(graph);
-        int target = target(graph);
-        int v = teams.size() - 1; // current game vertex
+        // [0, teams.size()) -> teams include team x for convenience
+        // [teams.size(), graph.V() - 2) -> games
+        FlowNetwork graph = new FlowNetwork(1 + 1 + teams.size() + gameNum);
 
-        for (int i = 0; i < x; ++i) {
-            for (int j = 0; j < x; ++j) {
-                graph.addEdge(new FlowEdge(source, v, schedule[i][j]));
+        int v = teams.size(); // current game vertex
+
+        for (int i = 0; i < teams.size(); ++i) {
+            if (i == x) continue;
+
+            graph.addEdge(new FlowEdge(i, target(graph), wins[x] + remaining[x] - wins[i]));
+
+            for (int j = 0; j < teams.size(); ++j) {
+                if (j == x) continue;
+                if (i == j) continue;
+
+                graph.addEdge(new FlowEdge(source(graph), v, schedule[i][j]));
                 graph.addEdge(new FlowEdge(v, i, Integer.MAX_VALUE));
                 graph.addEdge(new FlowEdge(v, j, Integer.MAX_VALUE));
                 v++;
             }
-
-            for (int j = x + 1; j < teams.size(); ++j) {
-                graph.addEdge(new FlowEdge(source, v, schedule[i][j]));
-                graph.addEdge(new FlowEdge(v, i, Integer.MAX_VALUE));
-                graph.addEdge(new FlowEdge(v, j - 1, Integer.MAX_VALUE));
-                v++;
-            }
-
-            graph.addEdge(new FlowEdge(i, target, wins[x] + remaining[x] - wins[i]));
         }
-
-        for (int i = x + 1; i < teams.size(); ++i) {
-            for (int j = 0; j < x; ++j) {
-                graph.addEdge(new FlowEdge(source, v, schedule[i][j]));
-                graph.addEdge(new FlowEdge(v, i - 1, Integer.MAX_VALUE));
-                graph.addEdge(new FlowEdge(v, j, Integer.MAX_VALUE));
-                v++;
-            }
-
-            for (int j = x + 1; j < teams.size(); ++j) {
-                graph.addEdge(new FlowEdge(source, v, schedule[i][j]));
-                graph.addEdge(new FlowEdge(v, i - 1, Integer.MAX_VALUE));
-                graph.addEdge(new FlowEdge(v, j - 1, Integer.MAX_VALUE));
-                v++;
-            }
-
-            graph.addEdge(new FlowEdge(i - 1, target, wins[x] + remaining[x] - wins[i]));
-        }
-
-        assert v == source : "v = " + v + ", source = " + source;
 
         return graph;
     }
 
     public static void main(String[] args) {
         BaseballElimination division = new BaseballElimination(args[0]);
-        StdOut.println(division);
 
         for (String team : division.teams()) {
-            StdOut.println("---------------");
-            StdOut.println("Consider team: " + team + " with index: " + division.teams.get(team));
-
             if (division.isEliminated(team)) {
                 StdOut.print(team + " is eliminated by the subset R = { ");
                 for (String t : division.certificateOfElimination(team)) {

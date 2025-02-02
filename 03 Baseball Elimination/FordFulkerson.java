@@ -4,11 +4,12 @@ import edu.princeton.cs.algs4.Queue;
 public class FordFulkerson {
     private final boolean[] marked;
     private int value;
+    private final FlowEdge[] edgeTo;
 
     public FordFulkerson(FlowNetwork G, int s, int t) {
         FlowNetwork graph = new FlowNetwork(G);
         marked = new boolean[graph.V()];
-        FlowEdge[] edgeTo = new FlowEdge[graph.V()];
+        edgeTo = new FlowEdge[graph.V()];
         value = 0;
 
         while (hasAugmentingPath(graph, edgeTo, s, t)) {
@@ -34,6 +35,18 @@ public class FordFulkerson {
         return value;
     }
 
+    public String toString(){
+        StringBuilder s = new StringBuilder();
+
+        for (int v = 0; v < marked.length; v++){
+            s.append("vertex ").append(v).append(": ").append(marked[v]).append("\n");
+        }
+
+        s.append("Total value: ").append(value).append("\n");
+
+        return s.toString();
+    }
+
     private boolean hasAugmentingPath(FlowNetwork G, FlowEdge[] edgeTo, int source, int target){
         Arrays.fill(marked, false);
         Arrays.fill(edgeTo, null);
@@ -48,7 +61,7 @@ public class FordFulkerson {
 
             for (FlowEdge e : G.adj(v)) {
                 int w = e.other(v);
-                if (!marked[w] || e.residualCapacityTo(w) <= 0) continue;
+                if (marked[w] || e.residualCapacityTo(w) <= 0) continue;
                 marked[w] = true;
                 edgeTo[w] = e;
                 queue.enqueue(w);
