@@ -9,6 +9,7 @@
       <sourceFolder url="file://$MODULE_DIR$/01 WordNet" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/02 Seam Carving" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/00 Exercise" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/03 Baseball Elimination" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
