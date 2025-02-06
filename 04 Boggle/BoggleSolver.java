@@ -239,7 +239,7 @@ public class BoggleSolver {
         int count = 0;
 
         while (true) {
-            if (stopwatch.elapsedTime() > 1) {
+            if (stopwatch.elapsedTime() > 5) {
                 break;
             }
 
@@ -247,6 +247,6 @@ public class BoggleSolver {
             solver.getAllValidWords(new BoggleBoard());
         }
 
-        StdOut.println("Ran on random Hasbro board: " + count);
+        StdOut.println("Ran on random Hasbro board per second: " + count / 5);
     }
 }
