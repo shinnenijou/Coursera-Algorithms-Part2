@@ -20,14 +20,12 @@ public class BoggleSolver {
         static public final int R = 26;
         public final char letter;
         public final Node[] children;
-        public final int length; //Qu will change the actual length so track a string length from root to current node
-        public boolean active;
+        public int wordIndex;
 
-        Node(char letter, int length) {
+        Node(char letter) {
             this.letter = letter;
-            this.active = false;
             this.children = new Node[26 + 1];
-            this.length = length;
+            this.wordIndex = -1;
         }
     }
 
@@ -38,41 +36,37 @@ public class BoggleSolver {
     private static final int MIN_LENGTH = 3;
 
     private final Node root;
+    private final String[] dictionary;
 
     // Initializes the data structure using the given array of strings as the dictionary.
     // (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
     public BoggleSolver(String[] dictionary) {
         if (dictionary == null) throw new IllegalArgumentException();
 
-        root = new Node('\0', 0);
+        root = new Node('\0');
+        this.dictionary = dictionary.clone();
 
-        for (String s : dictionary) {
-            if (s == null) throw new IllegalArgumentException();
-            String word = filterQu(s);
+        for (int i = 0; i < this.dictionary.length; i++) {
+            if (this.dictionary[i] == null) throw new IllegalArgumentException();
+            String word = filterQu(this.dictionary[i]);
             int index = word.charAt(0) - 'A';
-            root.children[index] = insert(root.children[index], word, 0, root.length);
+            root.children[index] = insert(root.children[index], word, 0, i);
         }
     }
 
     // Returns the set of all valid words in the given Boggle board, as an Iterable.
     public Iterable<String> getAllValidWords(BoggleBoard board) {
         SET<String> words = new SET<>();
-        StringBuilder s = new StringBuilder();
         boolean[] onStack = new boolean[board.cols() * board.rows()];
 
         for (int row = 0; row < board.rows(); row++) {
             for (int col = 0; col < board.cols(); col++) {
                 char firstLetter = filterQu(board.getLetter(row, col));
-                getAllValidWords(onStack, board, row, col, s, root.children[firstLetter - 'A'], words);
+                getAllValidWords(onStack, board, row, col, root.children[firstLetter - 'A'], words);
             }
         }
 
-        SET<String> finalWords = new SET<>();
-        for (String word : words) {
-            finalWords.add(recoverQu(word));
-        }
-
-        return finalWords;
+        return words;
     }
 
     // Returns the score of the given word if it is in the dictionary, zero otherwise.
@@ -115,8 +109,8 @@ public class BoggleSolver {
         if (root == null) return;
         s.append(root.letter);
 
-        if (root.active) {
-            words.add(s.toString());
+        if (root.wordIndex >= 0) {
+            words.add(this.dictionary[root.wordIndex]);
         }
 
         for (Node child : root.children) {
@@ -126,21 +120,20 @@ public class BoggleSolver {
         s.deleteCharAt(s.length() - 1);
     }
 
-    private Node insert(Node root, String word, int begin, int length) {
+    private Node insert(Node root, String word, int begin, int index) {
         if (begin >= word.length()) return null;
 
         if (root == null) {
-            int currentLength = word.charAt(begin) == QuReplacement.charAt(0) ? length + 2 : length + 1;
-            root = new Node(word.charAt(begin), currentLength);
+            root = new Node(word.charAt(begin));
         }
 
         if (begin + 1 >= word.length()) {
-            root.active = true;
+            root.wordIndex = index;
             return root;
         }
 
         int childIndex = word.charAt(begin + 1) - 'A';
-        root.children[childIndex] = insert(root.children[childIndex], word, begin + 1, root.length);
+        root.children[childIndex] = insert(root.children[childIndex], word, begin + 1, index);
         return root;
     }
 
@@ -148,7 +141,7 @@ public class BoggleSolver {
         if (root == null) return null;
 
         if (begin == word.length() - 1) {
-            return root.active ? root : null;
+            return root.wordIndex >= 0 ? root : null;
         }
 
         int childIndex = word.charAt(begin + 1) - 'A';
@@ -156,16 +149,14 @@ public class BoggleSolver {
     }
 
     // DFS trie and board in lockstep
-    private void getAllValidWords(boolean[] onStack, BoggleBoard board, int row, int col, StringBuilder s, Node root, SET<String> words) {
+    private void getAllValidWords(boolean[] onStack, BoggleBoard board, int row, int col, Node root, SET<String> words) {
         if (root == null) return;
         if (onStack[row * board.cols() + col]) return;
 
-        char letter = root.letter;
-        s.append(letter);
         onStack[row * board.cols() + col] = true;
 
-        if (root.active && root.length >= MIN_LENGTH) {
-            words.add(s.toString());
+        if (root.wordIndex >= 0 && this.dictionary[root.wordIndex].length() >= MIN_LENGTH) {
+            words.add(this.dictionary[root.wordIndex]);
         }
 
         char nextLetter;
@@ -174,52 +165,51 @@ public class BoggleSolver {
             // up-left
             if (col > 0) {
                 nextLetter = filterQu(board.getLetter(row - 1, col - 1));
-                getAllValidWords(onStack, board, row - 1, col - 1, s, root.children[nextLetter - 'A'], words);
+                getAllValidWords(onStack, board, row - 1, col - 1,  root.children[nextLetter - 'A'], words);
             }
 
             // up
             nextLetter = filterQu(board.getLetter(row - 1, col));
-            getAllValidWords(onStack, board, row - 1, col, s, root.children[nextLetter - 'A'], words);
+            getAllValidWords(onStack, board, row - 1, col,  root.children[nextLetter - 'A'], words);
 
             // up-right
             if (col + 1 < board.cols()) {
                 nextLetter = filterQu(board.getLetter(row - 1, col + 1));
-                getAllValidWords(onStack, board, row - 1, col + 1, s, root.children[nextLetter - 'A'], words);
+                getAllValidWords(onStack, board, row - 1, col + 1,  root.children[nextLetter - 'A'], words);
             }
         }
 
         // left
         if (col > 0) {
             nextLetter = filterQu(board.getLetter(row, col - 1));
-            getAllValidWords(onStack, board, row, col - 1, s, root.children[nextLetter - 'A'], words);
+            getAllValidWords(onStack, board, row, col - 1,  root.children[nextLetter - 'A'], words);
         }
 
         // right
         if (col + 1 < board.cols()) {
             nextLetter = filterQu(board.getLetter(row, col + 1));
-            getAllValidWords(onStack, board, row, col + 1, s, root.children[nextLetter - 'A'], words);
+            getAllValidWords(onStack, board, row, col + 1,  root.children[nextLetter - 'A'], words);
         }
 
         if (row + 1 < board.rows()) {
             // down-left
             if (col > 0) {
                 nextLetter = filterQu(board.getLetter(row + 1, col - 1));
-                getAllValidWords(onStack, board, row + 1, col - 1, s, root.children[nextLetter - 'A'], words);
+                getAllValidWords(onStack, board, row + 1, col - 1,  root.children[nextLetter - 'A'], words);
             }
 
             // down
             nextLetter = filterQu(board.getLetter(row + 1, col));
-            getAllValidWords(onStack, board, row + 1, col, s, root.children[nextLetter - 'A'], words);
+            getAllValidWords(onStack, board, row + 1, col,  root.children[nextLetter - 'A'], words);
 
             // down-right
             if (col + 1 < board.cols()) {
                 nextLetter = filterQu(board.getLetter(row + 1, col + 1));
-                getAllValidWords(onStack, board, row + 1, col + 1, s, root.children[nextLetter - 'A'], words);
+                getAllValidWords(onStack, board, row + 1, col + 1,  root.children[nextLetter - 'A'], words);
             }
         }
 
         onStack[row * board.cols() + col] = false;
-        s.deleteCharAt(s.length() - 1);
     }
 
     public static void main(String[] args) {
