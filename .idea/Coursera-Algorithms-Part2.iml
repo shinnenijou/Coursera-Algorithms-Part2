@@ -11,6 +11,7 @@
       <sourceFolder url="file://$MODULE_DIR$/00 Exercise" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/03 Baseball Elimination" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/04 Boggle" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/05 Burrows Wheeler" isTestSource="false" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
